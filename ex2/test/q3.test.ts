@@ -68,4 +68,24 @@ describe('Q3 Tests', () => {
               `), l2ToJS)).to.deep.equal(makeOk(`const b = (3 > 4);\nconst x = 5;\nconst f = ((y) => (x + y));\nconst g = ((y) => (x * y));\n((!b) ? f(3) : g(4));\n((x) => (x * x))(7)`));
     });
 
+    it('Q3 test 1', () => {
+        expect(l2toJSResult(`+`)).to.deep.equal(makeOk(`+`));
+    });
+
+    it('Q3 test 2', () => {
+        expect(l2toJSResult(`(not x)`)).to.deep.equal(makeOk(`(!x)`));
+    });
+    
+    it('Q3 test 3', () => {
+        expect(l2toJSResult(`(not (> 2 1))`)).to.deep.equal(makeOk(`(!(2 > 1))`));
+    });
+    
+    it('Q3 test 4', () => {
+        expect(l2toJSResult(`number?`)).to.deep.equal(makeOk(`((x) => typeof(x) === 'number')`));
+    });
+
+    it('Q3 test 5', () => {
+        expect(l2toJSResult(`(number? x)`)).to.deep.equal(makeOk(`((x) => typeof(x) === 'number')(x)`));
+    });
+
 });

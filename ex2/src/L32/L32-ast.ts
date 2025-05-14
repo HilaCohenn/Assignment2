@@ -36,7 +36,7 @@ import { Sexp, Token } from "s-expression";
 ;; <binding>  ::= ( <var> <cexp> )           / Binding(var:VarDecl, val:Cexp)
 ;; <prim-op>  ::= + | - | * | / | < | > | = | not |  and | or | eq? | string=?
 ;;                  | cons | car | cdr | pair? | number? | list 
-;;                  | boolean? | symbol? | string? | dict | get | dict?     ##### L3
+;;                  | boolean? | symbol? | string?      ##### L3
 ;; <num-exp>  ::= a number token
 ;; <bool-exp> ::= #t | #f
 ;; <var-ref>  ::= an identifier token
