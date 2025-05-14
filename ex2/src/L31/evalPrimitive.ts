@@ -1,10 +1,12 @@
 import { reduce } from "ramda";
-import { PrimOp } from "./L31-ast";
-import { isCompoundSExp, isEmptySExp, isSymbolSExp, makeCompoundSExp, makeEmptySExp, CompoundSExp, EmptySExp, Value } from "./L31-value";
-import { List, allT, first, isNonEmptyList, rest } from '../shared/list';
+import { isLitExp, PrimOp } from "./L31-ast";
+import { isCompoundSExp, isEmptySExp, isSymbolSExp, makeCompoundSExp, makeEmptySExp, CompoundSExp, EmptySExp, Value, SymbolSExp, LitSExp, SExpValue } from "./L31-value";
+import { List, allT, cons, first, isNonEmptyList, rest } from '../shared/list';
 import { isBoolean, isNumber, isString } from "../shared/type-predicates";
 import { Result, makeOk, makeFailure } from "../shared/result";
 import { format } from "../shared/format";
+import { LitExp } from "../L3/L3-ast";
+import { Sexp } from "s-expression";
 
 export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     proc.op === "+" ? (allT(isNumber, args) ? makeOk(reduce((x, y) => x + y, 0, args)) : 
@@ -32,6 +34,9 @@ export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     proc.op === "boolean?" ? makeOk(typeof (args[0]) === 'boolean') :
     proc.op === "symbol?" ? makeOk(isSymbolSExp(args[0])) :
     proc.op === "string?" ? makeOk(isString(args[0])) :
+    proc.op === "dict?" ? makeOk(isDictPrim(args[0])) :
+    proc.op === "dict" ? makeDict(args[0]):
+    proc.op === "get"? getPrim(args):
     makeFailure(`Bad primitive op: ${format(proc.op)}`);
 
 const minusPrim = (args: Value[]): Result<number> => {
@@ -95,3 +100,30 @@ export const listPrim = (vals: List<Value>): EmptySExp | CompoundSExp =>
 
 const isPairPrim = (v: Value): boolean =>
     isCompoundSExp(v);
+
+const isDictPrim = (v: Value): boolean => 
+    isLitExp(v) && isNonEmptyList(v.val) && allT((pair: any): pair is CompoundSExp =>
+     isCompoundSExp(pair) && isSymbolSExp(pair.val1), v.val as List<Value>)&&areKeysUnique(v.val as List<CompoundSExp>);
+
+const makeDict = (v: Value): Result<Value> => 
+    isDictPrim(v)?makeOk(v):makeFailure(`param is not dict ${format(v)}`);
+
+const areKeysUnique = (pairs: List<CompoundSExp>): boolean => 
+     ((keys) => new Set(keys).size === keys.length)(
+         pairs.map(pair => (pair.val1 as SymbolSExp).val)
+    );
+
+const getPrim = (args: Value[]): Result<Value> =>
+    isLitExp(args[0]) && isDictPrim(args[0]) && isSymbolSExp(args[1])
+        ? getFromDict(args[0], args[1])
+        : makeFailure('param not valid');
+
+const getFromDict = (dict:Value, key: Value):Result<Value> =>
+    isCompoundSExp(dict)?
+    isCompoundSExp(dict.val1)  && 
+    dict.val1.val1 === key?makeOk(dict.val1.val2):
+    isNonEmptyList(dict.val2)?
+    getFromDict(dict.val2, key):
+    makeFailure(`key ${format(key)} not found in dict ${format(dict)}`):
+    makeFailure(`param not valid ${format(dict)}`);
+    
