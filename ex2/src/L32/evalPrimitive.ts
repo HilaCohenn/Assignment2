@@ -1,7 +1,7 @@
 import { reduce } from "ramda";
 import { PrimOp } from "./L32-ast";
 import { isCompoundSExp, isEmptySExp, isSymbolSExp, makeCompoundSExp, makeEmptySExp, CompoundSExp, EmptySExp, Value } from "./L32-value";
-import { List, allT, first, isNonEmptyList, rest } from '../shared/list';
+import { List, allT, cons, first, isNonEmptyList, rest } from '../shared/list';
 import { isBoolean, isNumber, isString } from "../shared/type-predicates";
 import { Result, makeOk, makeFailure } from "../shared/result";
 import { format } from "../shared/format";
@@ -32,6 +32,7 @@ export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     proc.op === "boolean?" ? makeOk(typeof (args[0]) === 'boolean') :
     proc.op === "symbol?" ? makeOk(isSymbolSExp(args[0])) :
     proc.op === "string?" ? makeOk(isString(args[0])) :
+    proc.op === "dict" ? dictPrim(args[0]) :
     makeFailure(`Bad primitive op: ${format(proc.op)}`);
 
 const minusPrim = (args: Value[]): Result<number> => {
@@ -95,3 +96,14 @@ export const listPrim = (vals: List<Value>): EmptySExp | CompoundSExp =>
 
 const isPairPrim = (v: Value): boolean =>
     isCompoundSExp(v);
+
+const dictPrim = (arg: Value): Result<Value> => {
+    if (!isLit(arg)) return makeFailure("dict expects a literal");
+    const val = arg.val;
+    if (!isCompoundSExp(val)) return makeFailure("dict expects a list of pairs");
+
+    // optional: check that each element is a pair or single-item list
+    // return the literal itself
+    return makeOk(arg);
+}
+
