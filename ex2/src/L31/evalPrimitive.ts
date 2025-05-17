@@ -1,4 +1,4 @@
-import { reduce } from "ramda";
+import { is, reduce } from "ramda";
 import { isLitExp, PrimOp } from "./L31-ast";
 import { isCompoundSExp, isEmptySExp, isSymbolSExp, makeCompoundSExp, makeEmptySExp, CompoundSExp, EmptySExp, Value, SymbolSExp, LitSExp, SExpValue } from "./L31-value";
 import { List, allT, cons, first, isNonEmptyList, rest } from '../shared/list';
@@ -102,28 +102,37 @@ const isPairPrim = (v: Value): boolean =>
     isCompoundSExp(v);
 
 const isDictPrim = (v: Value): boolean => 
-    isLitExp(v) && isNonEmptyList(v.val) && allT((pair: any): pair is CompoundSExp =>
-     isCompoundSExp(pair) && isSymbolSExp(pair.val1), v.val as List<Value>)&&areKeysUnique(v.val as List<CompoundSExp>);
+isdict(v)&&areKeysUnique(v, new Set());
 
+const isdict = (v: Value): boolean =>
+    isEmptySExp(v)
+        ? true
+        : isCompoundSExp(v) &&
+          isCompoundSExp(v.val1) &&
+          isSymbolSExp(v.val1.val1) &&
+          isdict(v.val2);
+          
 const makeDict = (v: Value): Result<Value> => 
     isDictPrim(v)?makeOk(v):makeFailure(`param is not dict ${format(v)}`);
 
-const areKeysUnique = (pairs: List<CompoundSExp>): boolean => 
-     ((keys) => new Set(keys).size === keys.length)(
-         pairs.map(pair => (pair.val1 as SymbolSExp).val)
-    );
+const areKeysUnique = (dict: Value,set:Set<String>): boolean => 
+    isEmptySExp(dict)?true:
+    isCompoundSExp(dict)?
+    isCompoundSExp(dict.val1) && isSymbolSExp(dict.val1.val1) && !set.has(dict.val1.val1.val)?
+    areKeysUnique(dict.val2,set.add(dict.val1.val1.val)):
+    false:
+    false;
 
 const getPrim = (args: Value[]): Result<Value> =>
-    isLitExp(args[0]) && isDictPrim(args[0]) && isSymbolSExp(args[1])
+     isDictPrim(args[0]) && isSymbolSExp(args[1])
         ? getFromDict(args[0], args[1])
         : makeFailure('param not valid');
 
 const getFromDict = (dict:Value, key: Value):Result<Value> =>
     isCompoundSExp(dict)?
     isCompoundSExp(dict.val1)  && 
-    dict.val1.val1 === key?makeOk(dict.val1.val2):
-    isNonEmptyList(dict.val2)?
+    eqPrim([dict.val1.val1, key])?makeOk(dict.val1.val2):
+    isEmptySExp(dict.val2)?makeFailure(`key ${format(key)} not found in dict ${format(dict)}`):
     getFromDict(dict.val2, key):
-    makeFailure(`key ${format(key)} not found in dict ${format(dict)}`):
     makeFailure(`param not valid ${format(dict)}`);
     

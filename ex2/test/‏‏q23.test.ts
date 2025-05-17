@@ -14,8 +14,10 @@ const evalP = (x: string): Result<Value> =>
     bind(parseL3(x), evalL3program);
 
 describe('Q23 Tests', () => {
+   
     
    it("Q23 test 1", () => {
+
         expect(evalP(`(L3 ` + q23 + ` (get (dict '((a . 1) (b . 2))) 'b))`)).to.deep.equal(makeOk(2));
     });
 
@@ -55,4 +57,23 @@ describe('Q23 Tests', () => {
             (bind (get (dict '((a . 1) (b . 2))) 'b) (lambda (x) (* x x))))`
         )).to.deep.equal(makeOk(4));
     });
+    it("Q23 test 8 - empty dict", () => {
+    expect(evalP(`(L3 ` + q23 + ` (dict? '()))`)).to.deep.equal(makeOk(true));
+});
+
+    it("Q23 test 9 - value is pair", () => {
+    expect(evalP(`(L3 ` + q23 + ` 
+        (dict? '((a . (1 . 2)) (b . 2))))`)).to.deep.equal(makeOk(true));
+});
+
+
+    it("Q23 test 10 - duplicate keys", () => {
+    expect(evalP(`(L3 ` + q23 + ` 
+        (dict? '((a . 1) (a . 2))))`)).to.deep.equal(makeOk(false));
+});
+
+it("Q23 test 11 - get with non-symbol key", () => {
+    expect(evalP(`(L3 ` + q23 + ` (is-error? (get (dict '((a . 1))) 5)))`)).to.deep.equal(makeOk(true));
+});
+
 });

@@ -1,0 +1,78 @@
+(define make-error
+    (lambda ()
+      'error))
+
+(define is-error?
+
+    (lambda (x)
+      (eq? x 'error)))
+
+(define list?
+  (lambda (x)
+    (if (eq? x '())
+        #t
+        (and (pair? x) (list? (cdr x))))))
+
+(define member
+  (lambda (x lst)
+    (if (eq? lst '())
+        #f
+        (if (eq? x (car lst))
+            #t
+            (member x (cdr lst))))))
+
+(define bind
+    (lambda (val f)
+      (if (is-error? val)
+          val
+          (f val))))
+
+(define check-keys
+     (lambda (dict past-k)
+       (if (eq? dict '())
+           #t
+           (if (member (car (car dict)) past-k)
+               #f
+               (check-keys (cdr dict) (cons (car (car dict)) past-k)))))
+)
+
+(define dict?
+  (lambda (d)
+ (and (isdict? d)
+     (check-keys d '()))
+))
+
+(define isdict?
+  (lambda (x)
+    (if (list? x)
+        (if (eq? x '())
+            #t
+            (if (and (pair? (car x))
+                     (symbol? (car (car x))))
+                (isdict? (cdr x))
+                #f))
+        #f)))
+
+(define dict
+    (lambda (x)
+      (if (dict? x)
+          x
+          (make-error))))
+
+(define search
+  (lambda (lst key)
+    (if (eq? lst '())
+        (make-error)
+        (if (and (pair? (car lst))
+                 (eq? (car (car lst)) key))
+            (cdr (car lst))
+            (search (cdr lst) key)))))
+
+(define get
+  (lambda (d key)
+    (if (and (dict? d)
+             (symbol? key))
+        (search d key)
+        (make-error))))
+
+
