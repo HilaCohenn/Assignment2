@@ -5,7 +5,10 @@
   "devDependencies": {
     "@types/chai": "^5.2.2",
     "@types/jest": "^29.5.14",
+    "@types/mocha": "^10.0.10",
     "@types/ramda": "^0.30.2",
-    "chai": "^5.2.0"
+    "chai": "^5.2.0",
+    "mocha": "^11.2.2",
+    "ts-node": "^10.9.2"
   }
 }

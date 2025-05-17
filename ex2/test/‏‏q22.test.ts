@@ -9,7 +9,7 @@ import { makeEmptySExp } from "../src/L3/L3-value";
 const evalP = (x: string): Result<Value> =>
     bind(parseL32(x), evalL32program);
 
-describe('Q22 Tests', () => {
+describe.only('Q22 Tests', () => {
 
     it("Q22 basic tests 1", () => {
         expect(evalP(`(L32 ((dict (a 1) (b 2)) 'a))`)).to.deep.equal(makeOk(1));
@@ -31,4 +31,23 @@ describe('Q22 Tests', () => {
                 (dict (a 2) (b 1)))
             'a))`)).to.deep.equal(makeOk(2));
     });
+    
+    
+    it("Q22 test 5 - dict access with variable key", () => {
+        expect(evalP(`(L32 
+                        (define k 'a)
+                        ((dict (a 42) (b 99)) k))`)).to.deep.equal(makeOk(42));
+    });
+    
+    it("Q22 test 6 - key not found", () => {
+        expect(evalP(`(L32 ((dict (a 1) (b 2)) 'c))`)).to.deep.equal(makeFailure("Key not found: c"));
+    });
+    
+    it("Q22 test 7 - dict with different value types", () => {
+        expect(evalP(`(L32 ((dict (x "hello") (y #t) (z 3.14)) 'x))`)).to.deep.equal(makeOk("hello"));
+    });
+    
+    
+    
+    
 });
