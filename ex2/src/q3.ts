@@ -27,7 +27,7 @@ export const l2ToJS = (exp: Exp | Program): Result<string>  =>
         bind(l2ToJS(exp.then), thn =>
         bind(l2ToJS(exp.alt), alt =>
           makeOk(`(${tst} ? ${thn} : ${alt})`)))) :
-    isPrimOp(exp) ? makeOk(PrimOpToLambda(exp.op)) :
+    isPrimOp(exp) ? makeOk(PrimOpToString(exp.op)) :
     isAppExp(exp) ? bind(l2ToJS(exp.rator), op =>
       bindResults(exp.rands.map(l2ToJS), args =>
         isPrimOp(exp.rator)
@@ -41,8 +41,8 @@ export const l2ToJS = (exp: Exp | Program): Result<string>  =>
     makeFailure(`Unknown expression type: ${exp}`);
 
 const PrimOpToJS = (op: string, args: string[]): Result<string> =>
-  op === "number?" ? makeOk(PrimOpToLambda(op)+`(${args[0]})`) :
-  op === "boolean?" ? makeOk(PrimOpToLambda(op)+`(${args[0]})`) :
+  op === "number?" ? makeOk(PrimOpToString(op)+`(${args[0]})`) :
+  op === "boolean?" ? makeOk(PrimOpToString(op)+`(${args[0]})`) :
   op === "not" ? makeOk(`(!${args[0]})`) :
   op === "and" ? makeOk(`(${args[0]} && ${args[1]})`) :
   op === "or" ? makeOk(`(${args[0]} || ${args[1]})`) :
@@ -51,7 +51,7 @@ const PrimOpToJS = (op: string, args: string[]): Result<string> =>
     ? makeOk(`(${args.join(` ${op} `)})`)
     : makeOk(`${op}(${args.join(",")})`);
 
-    const PrimOpToLambda = (op: string): string =>
+    const PrimOpToString = (op: string): string =>
   op === "number?" ?`((x) => typeof(x) === 'number')` :
   op === "boolean?" ? `((x) => typeof(x) === 'boolean')` :
   op.toString(); //
