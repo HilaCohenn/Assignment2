@@ -110,10 +110,6 @@ const isdict = (v: Value): boolean =>
         : isCompoundSExp(v) &&
           isCompoundSExp(v.val1) &&
           isSymbolSExp(v.val1.val1) &&
-          (
-            !isCompoundSExp(v.val1.val2) ||
-            (isCompoundSExp(v.val1.val2) && isEmptySExp(v.val1.val2.val2))
-          ) &&
           isdict(v.val2);
           
 const makeDict = (v: Value): Result<Value> => 
