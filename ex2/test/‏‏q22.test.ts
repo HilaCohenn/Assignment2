@@ -47,6 +47,12 @@ describe('Q22 Tests', () => {
         expect(evalP(`(L32 ((dict (x "hello") (y #t) (z 3.14)) 'x))`)).to.deep.equal(makeOk("hello"));
     });
     
+    it("Q22 test 8 - substitution inside dict values", () => {
+        expect(evalP(`(L32
+                        (define x 100)
+                        ((dict (a x) (b 5)) 'a))`)).to.deep.equal(makeOk(100));
+    });
+
     
     
     
