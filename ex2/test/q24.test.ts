@@ -31,7 +31,7 @@ const noDict = (x: string): Result<boolean> =>
     bind(parseL32(x), (prog) => 
         makeOk(noDictExp(L32toL3(prog))))
 
-describe('Q24 Tests', () => {
+describe.only('Q24 Tests', () => {
 
 
     it("Q24 test 1", () => {
