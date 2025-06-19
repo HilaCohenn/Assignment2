@@ -1,106 +1,117 @@
 import { makeProgram, Program } from './L32/L32-ast';
 import {
-     Exp, CExp, DefineExp,
-    isProgram, isDefineExp, isCExp,
+    Exp, CExp,
+    isDefineExp, isCExp,
     makeDefineExp,
-    isAppExp, isIfExp, isProcExp, isLetExp,
-    makeAppExp, makeIfExp, makeProcExp, makeLetExp,
-    makeVarRef, makeLitExp,
-    isDictExp, DictExp, AppExp,isNumExp, isBoolExp, isStrExp,
+    isAppExp, isIfExp, isProcExp,
+    makeAppExp, makeIfExp, makeProcExp,
+    makeVarRef, makeLitExp, makeVarDecl, makePrimOp,
+    isDictExp, DictExp, isNumExp, isBoolExp, isStrExp,
     isPrimOp, isVarRef, isLitExp
 } from "./L32/L32-ast";
-import {  makeCompoundSExp, makeSymbolSExp, makeEmptySExp,SExpValue } from "./L32/L32-value";
-
+import { makeCompoundSExp, makeSymbolSExp, makeEmptySExp, SExpValue } from "./L32/L32-value";
 import { map } from "ramda";
-/*
-Purpose: rewrite all occurrences of DictExp in a program to AppExp.
-Signature: Dict2App (exp)
-Type: Program -> Program
-*/
-export const Dict2App = (exp: Program): Program =>
-    makeProgram(map(rewriteExp, exp.exps));
 
-// Build a proper list of SExp pairs: ((a . val1) (b . val2)) → CompoundSExp
-const buildSExpList = (xs: SExpValue[]): SExpValue =>
-    xs.length === 0
-        ? makeEmptySExp()
-        : makeCompoundSExp(xs[0], buildSExpList(xs.slice(1)));
+// Converts a list of SExpValues into a proper Lisp-style list (no reduceRight)
+const buildSExpList = (items: SExpValue[]): SExpValue =>
+    items.length === 0 ? makeEmptySExp() :
+    makeCompoundSExp(items[0], buildSExpList(items.slice(1)));
 
-// Convert CExp to quoted SExpValue (syntax tree form)
-const cexpToSExp = (exp: CExp): SExpValue =>
-    isNumExp(exp) ? exp.val :
-    isBoolExp(exp) ? exp.val :
-    isStrExp(exp) ? exp.val :
-    isPrimOp(exp) ? makeSymbolSExp(exp.op) :
-    isVarRef(exp) ? makeSymbolSExp(exp.var) :
-    isLitExp(exp) ? exp.val :
-    isAppExp(exp)
-        ? makeCompoundSExp(
-            cexpToSExp(exp.rator),
-            buildSExpList(map(cexpToSExp, exp.rands))
-        ) :
-    isProcExp(exp)
-        ? buildSExpList([
-            makeSymbolSExp("lambda"),
-            buildSExpList(map(p => makeSymbolSExp(p.var), exp.args)),
-            buildSExpList(map(cexpToSExp, exp.body))
-        ]) :
-    isIfExp(exp)
-        ? buildSExpList([
-            makeSymbolSExp("if"),
-            cexpToSExp(exp.test),
-            cexpToSExp(exp.then),
-            cexpToSExp(exp.alt)
-        ]) :
-    isLetExp(exp)
-        ? buildSExpList([
-            makeSymbolSExp("let"),
-            buildSExpList(map(b =>
-                buildSExpList([
-                    makeSymbolSExp(b.var.var),
-                    cexpToSExp(b.val)
-                ]), exp.bindings)),
-            ...map(cexpToSExp, exp.body)
-        ]) :
-    isDictExp(exp)
-    buildSExpList([makeSymbolSExp("unsupported")]);
+// Converts a CExp to its corresponding SExpValue (no reduceRight)
+const convertToSExp = (exp: CExp): SExpValue => {
+    if (isNumExp(exp) || isBoolExp(exp) || isStrExp(exp)) return exp.val;
+    if (isPrimOp(exp)) return makeSymbolSExp(exp.op);
+    if (isVarRef(exp)) return makeSymbolSExp(exp.var);
+    if (isLitExp(exp)) return exp.val;
 
-// Transform (dict ...) → (dict '((a . val) ...))
-const rewriteDictExp = (exp: DictExp): CExp =>
-    exp.entries.length === 0
-        ? makeAppExp(makeVarRef("dict"), [makeLitExp(makeEmptySExp())])
-        : makeAppExp(
-            makeVarRef("dict"),
-            [makeLitExp(buildSExpList(
-                map(({ key, val }) =>
-                    makeCompoundSExp(makeSymbolSExp(key), cexpToSExp(val)),
-                exp.entries)
-            ))]
+    if (isDictExp(exp)) {
+        const dictSymbol = makeSymbolSExp("dict");
+        const entryList = exp.entries.map(entry =>
+            makeCompoundSExp(
+                makeSymbolSExp(entry.key),
+                makeCompoundSExp(convertToSExp(entry.val), makeEmptySExp())
+            )
         );
+        return makeCompoundSExp(dictSymbol, buildSExpList(entryList));
+    }
 
-// Recursively rewrite all CExp forms
+    if (isAppExp(exp)) {
+        const all = [exp.rator, ...exp.rands].map(convertToSExp);
+        return buildSExpList(all);
+    }
+
+    if (isProcExp(exp)) {
+        const lambdaSym = makeSymbolSExp("lambda");
+        const argsList = buildSExpList(exp.args.map(arg => makeSymbolSExp(arg.var)));
+        const bodyList = buildSExpList(exp.body.map(convertToSExp));
+        return makeCompoundSExp(lambdaSym, makeCompoundSExp(argsList, bodyList));
+    }
+
+    return makeEmptySExp();
+};
+
+// Translates a DictExp to AppExp: (dict '((key . val)...))
+const transformDict = (dict: DictExp): CExp => {
+    const keyValuePairs = dict.entries.map(entry =>
+        makeCompoundSExp(
+            makeSymbolSExp(entry.key),
+            convertToSExp(entry.val)
+        )
+    );
+    return makeAppExp(
+        makeVarRef("dict"),
+        [makeLitExp(buildSExpList(keyValuePairs))]
+    );
+};
+
+// Recursively rewrites all sub-expressions (no DictExp remains)
 const rewriteCExp = (exp: CExp): CExp =>
-    isDictExp(exp) ? rewriteDictExp(exp) :
+    isDictExp(exp) ? transformDict(exp) :
     isAppExp(exp) ? makeAppExp(rewriteCExp(exp.rator), map(rewriteCExp, exp.rands)) :
     isIfExp(exp) ? makeIfExp(rewriteCExp(exp.test), rewriteCExp(exp.then), rewriteCExp(exp.alt)) :
     isProcExp(exp) ? makeProcExp(exp.args, map(rewriteCExp, exp.body)) :
-    isLetExp(exp)
-        ? makeLetExp(
-            exp.bindings.map(b => ({ tag: "Binding", var: b.var, val: rewriteCExp(b.val) })),
-            map(rewriteCExp, exp.body)
-        ) :
     exp;
 
-// Rewrite top-level Exp (Define or CExp)
-const rewriteExp = (exp: Exp): Exp =>
+const rewriteTopExp = (exp: Exp): Exp =>
     isDefineExp(exp) ? makeDefineExp(exp.var, rewriteCExp(exp.val)) :
     isCExp(exp) ? rewriteCExp(exp) :
     exp;
 
-/*
-Purpose: Transform L32 program to L3
-Signature: L32ToL3(prog)
-Type: Program -> Program
-*/
-export const L32toL3 = (prog: Program): Program =>
-    Dict2App(prog);
+// === Exported functions ===
+
+export const Dict2App = (prog: Program): Program =>
+    makeProgram(map(rewriteTopExp, prog.exps));
+
+export const L32toL3 = (prog: Program): Program => {
+    const dictImpl = makeProcExp(
+        [makeVarDecl("entries")],
+        [makeProcExp(
+            [makeVarDecl("key")],
+            [makeIfExp(
+                makeAppExp(makePrimOp("pair?"), [makeVarRef("entries")]),
+                makeIfExp(
+                    makeAppExp(makePrimOp("eq?"), [
+                        makeVarRef("key"),
+                        makeAppExp(makePrimOp("car"), [
+                            makeAppExp(makePrimOp("car"), [makeVarRef("entries")])
+                        ])
+                    ]),
+                    makeAppExp(makePrimOp("cdr"), [
+                        makeAppExp(makePrimOp("car"), [makeVarRef("entries")])
+                    ]),
+                    makeAppExp(
+                        makeAppExp(makeVarRef("dict"), [
+                            makeAppExp(makePrimOp("cdr"), [makeVarRef("entries")])
+                        ]),
+                        [makeVarRef("key")]
+                    )
+                ),
+                makeLitExp(false)
+            )]
+        )]
+    );
+
+    const dictDef = makeDefineExp(makeVarDecl("dict"), dictImpl);
+    const transformed = Dict2App(prog);
+    return makeProgram([dictDef, ...transformed.exps]);
+};
