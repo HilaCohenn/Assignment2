@@ -1,7 +1,7 @@
 import { filter, indexOf, map, includes, zip, KeyValuePair } from "ramda";
-import { CExp, ProcExp, VarDecl, VarRef } from "./L32-ast";
-import { isAppExp, isBoolExp, isIfExp, isLitExp, isNumExp, isPrimOp, isProcExp, isStrExp, isVarRef } from "./L32-ast";
-import { makeAppExp, makeIfExp, makeProcExp, makeVarDecl, makeVarRef } from "./L32-ast";
+import { CExp, ProcExp, VarDecl, VarRef, Pair } from "./L32-ast";
+import { isAppExp, isBoolExp, isIfExp, isLitExp, isNumExp, isPrimOp, isProcExp, isStrExp, isVarRef, isDictExp } from "./L32-ast";
+import { makeAppExp, makeIfExp, makeProcExp, makeVarDecl, makeVarRef, makeDictExp, makePair } from "./L32-ast";
 import { first } from '../shared/list';
 
 // For applicative eval - the type of exps should be ValueExp[] | VarRef[];
@@ -38,6 +38,7 @@ export const substitute = (body: CExp[], vars: string[], exps: CExp[]): CExp[] =
         isIfExp(e) ? makeIfExp(sub(e.test), sub(e.then), sub(e.alt)) :
         isProcExp(e) ? subProcExp(e) :
         isAppExp(e) ? makeAppExp(sub(e.rator), map(sub, e.rands)) :
+        isDictExp(e) ? makeDictExp(map((p: Pair) => makePair(p.key, sub(p.val)), e.entries)) :
         e;
     
     return map(sub, body);

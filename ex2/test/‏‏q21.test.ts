@@ -11,7 +11,6 @@ const evalP = (x: string): Result<Value> =>
 describe('Q21 Tests', () => {
     
     it("Q21 test 1", () => {
-        console.log(evalP(`(L31 (get (dict '((a . 1) (b . 2))) 'a))`));
         expect(evalP(`(L31 (get (dict '((a . 1) (b . 2))) 'a))`)).to.deep.equal(makeOk(1));
         
     });

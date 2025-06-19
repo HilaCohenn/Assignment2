@@ -1,6 +1,6 @@
 import { filter, indexOf, map, includes, zip, KeyValuePair } from "ramda";
 import { CExp, ProcExp, VarDecl, VarRef } from "./L3-ast";
-import { isAppExp, isBoolExp, isIfExp, isLitExp, isNumExp, isPrimOp, isProcExp, isStrExp, isVarRef } from "./L3-ast";
+import { isAppExp, isBoolExp, isIfExp, isLitExp, isNumExp, isPrimOp, isProcExp, isStrExp, isVarRef} from "./L3-ast";
 import { makeAppExp, makeIfExp, makeProcExp, makeVarDecl, makeVarRef } from "./L3-ast";
 import { first } from '../shared/list';
 
