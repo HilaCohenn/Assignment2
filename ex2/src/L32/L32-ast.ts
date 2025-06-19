@@ -236,11 +236,11 @@ const parseIfExp = (params: Sexp[]): Result<IfExp> =>
     mapv(mapResult(parseL32CExp, params), (cexps: CExp[]) => 
         makeIfExp(cexps[0], cexps[1], cexps[2]));
 
-    // to check if good
+   
 const parseDictExp = (params: Sexp[]): Result<DictExp> =>
         mapv(mapResult(parsePair, params), (entries: Pair[]) =>
             makeDictExp(entries));
-    // also to check if good
+    
 const parsePair = (sexp: Sexp): Result<Pair> =>
     isCompoundSexp(sexp) && isNonEmptyList<Sexp>(sexp) && sexp.length === 2 ?
         (isString(first(sexp)) ? 
